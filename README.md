@@ -1,5 +1,7 @@
 # nestjs-skywalking
 
+[![codecov](https://codecov.io/gh/wokim/nestjs-skywalking/graph/badge.svg?token=KAMJQCY7Z8)](https://codecov.io/gh/wokim/nestjs-skywalking)
+
 A skywalking module for Nest framework (node.js) using [skywalking-backend-js](https://www.npmjs.com/package/skywalking-backend-js) library.
 
 ## Installation
