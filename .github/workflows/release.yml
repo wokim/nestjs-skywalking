@@ -22,7 +22,7 @@ jobs:
     - name: Update package version and create Git tag
       run: |
         VERSION=$(echo ${{ github.event.release.tag_name }} | sed 's/^v//')
-        npm version $VERSION --no-git-tag-version
+        npm version $VERSION
         git add package.json
         git commit -m "chore(release): bump version to $VERSION"
         git tag -a $VERSION -m "chore(release): tag version $VERSION"
