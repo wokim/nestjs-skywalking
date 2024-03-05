@@ -1,0 +1,45 @@
+name: Publish Package
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v2
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v2
+      with:
+        node-version: '14'
+        registry-url: 'https://registry.npmjs.org/'
+
+    - name: Install dependencies
+      run: npm install
+
+    - name: Build project
+      run: npm run build # TypeScript 프로젝트를 빌드합니다.
+
+    - name: Configure Git
+      run: |
+        git config user.name "GitHub Actions"
+        git config user.email "actions@github.com"
+
+    - name: Update package version and create Git tag
+      run: |
+        VERSION=$(echo ${{ github.event.release.tag_name }} | sed 's/^v//')
+        npm version $VERSION --no-git-tag-version
+        git add package.json
+        git commit -m "chore(release): bump version to $VERSION"
+        git tag -a $VERSION -m "chore(release): tag version $VERSION"
+
+    - name: Push Git tag
+      run: git push origin ${{ github.event.release.tag_name }}
+
+    - name: Publish to npm
+      run: npm publish
+      env:
+        NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
