@@ -29,7 +29,7 @@ jobs:
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v2
       with:
-        # The 'token' input is not required for public repos
+        token: ${{ secrets.CODECOV_TOKEN }}
         file: ./coverage/lcov.info
         flags: unittests # Optional
         name: codecov-umbrella # Optional
@@ -49,6 +49,8 @@ jobs:
 
     - name: Push Git tag
       run: git push origin ${{ github.event.release.tag_name }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Publish to npm
       run: npm publish
