@@ -14,14 +14,25 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v2
       with:
-        node-version: '14'
+        node-version: '20'
         registry-url: 'https://registry.npmjs.org/'
 
     - name: Install dependencies
       run: npm install
 
     - name: Build project
-      run: npm run build # TypeScript 프로젝트를 빌드합니다.
+      run: npm run build
+
+    - name: Run tests and collect coverage
+      run: npm run test:cov
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v2
+      with:
+        # The 'token' input is not required for public repos
+        file: ./coverage/lcov.info
+        flags: unittests # Optional
+        name: codecov-umbrella # Optional
 
     - name: Configure Git
       run: |
