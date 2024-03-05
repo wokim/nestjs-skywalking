@@ -10,9 +10,9 @@ jobs:
     steps:
     - name: Check out code
       uses: actions/checkout@v3
-      with:
-        ref: ${{ github.head_ref }}
-        fetch-depth: 0
+      # with:
+      #   ref: ${{ github.head_ref }}
+      #   fetch-depth: 0
 
     - name: Configure Git
       run: |
@@ -27,16 +27,16 @@ jobs:
         git commit -m "chore(release): bump version to $VERSION"
         git tag -a $VERSION -m "chore(release): tag version $VERSION"
 
-    # - name: Push Git tag
-    #   run: git push origin ${{ github.event.release.tag_name }}
-    #   env:
-    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Push Git tag
+      run: git push origin ${{ github.event.release.tag_name }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Push changes
-      uses: ad-m/github-push-action@master
-      with:
-        tags: true
-        branch: ${{ github.ref }}
+    # - name: Push changes
+    #   uses: ad-m/github-push-action@master
+    #   with:
+    #     tags: true
+    #     branch: ${{ github.ref }}
 
     - name: Setup Node.js
       uses: actions/setup-node@v3
