@@ -1,7 +1,8 @@
 {
+	"editor.tabSize": 2,
 	"editor.renderWhitespace": "all",
 	"editor.formatOnPaste": true,
-	"editor.insertSpaces": false,
+	"editor.insertSpaces": true,
 	"editor.renderControlCharacters": true,
 	"editor.formatOnSave": true,
 	"files.trimTrailingWhitespace": true,
