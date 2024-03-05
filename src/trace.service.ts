@@ -6,10 +6,26 @@ import { ContextManager } from 'skywalking-backend-js';
  * Service for managing traces and spans.
  */
 export class TraceService {
+  /**
+   * Gets the current span.
+   * @returns The current span.
+   */
   get currentSpan() {
     return ContextManager.currentSpan;
   }
 
+  /**
+   * Gets the current context.
+   * @returns The current context.
+   */
+  get currentContext() {
+    return ContextManager.current;
+  }
+
+  /**
+   * Returns the context manager.
+   * @returns The context manager instance.
+   */
   get contextManager() {
     return ContextManager;
   }
@@ -18,7 +34,7 @@ export class TraceService {
    * Add tags to the current span.
    * @param tags - The tags to be added.
    */
-  addTags(tags: { [key: string]: any }) {
+  addTags(tags: { [key: string]: string }) {
     for (const key in tags) {
       if (tags.hasOwnProperty(key)) {
         this.currentSpan.tag({

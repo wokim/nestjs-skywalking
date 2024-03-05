@@ -100,7 +100,6 @@ export class BaseDecoratorInjector {
       val: error.stack || '',
       overridable: false,
     });
-    throw error;
   }
 
   /**
@@ -122,6 +121,7 @@ export class BaseDecoratorInjector {
             .apply(this, args)
             .catch((error: Error) => {
               DecoratorInjector.recordException(error, span);
+              throw error;
             })
             .finally(() => span.stop());
         } else {
@@ -130,6 +130,7 @@ export class BaseDecoratorInjector {
             return result;
           } catch (error) {
             DecoratorInjector.recordException(error, span);
+            throw error;
           } finally {
             span.stop();
           }

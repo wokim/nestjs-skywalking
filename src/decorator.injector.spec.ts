@@ -5,7 +5,6 @@ import { NoSpan, Span } from './span.decorator';
 import { SkyWalkingModule } from './skywalking.module';
 import SkyWalkingSpan from 'skywalking-backend-js/lib/trace/span/Span';
 import { ContextManager } from 'skywalking-backend-js';
-import SkyWalkingContext from 'skywalking-backend-js/lib/trace/context/Context';
 import { Constants } from './constants';
 import * as request from 'supertest';
 import { PATH_METADATA, PIPES_METADATA } from '@nestjs/common/constants';
@@ -16,6 +15,7 @@ import {
   TRANSPORT_METADATA,
 } from '@nestjs/microservices/constants';
 import { PatternHandler } from '@nestjs/microservices/enums/pattern-handler.enum';
+import { TraceService } from './trace.service';
 
 describe('DecoratorInjector', () => {
   it('should work with sync function', async () => {
@@ -998,6 +998,118 @@ describe('DecoratorInjector', () => {
       expect(mockSpan.stop).toHaveBeenCalledTimes(2);
     });
   });
+
+  it('should record custom tags with TraceService', async () => {
+    // given
+    @Injectable()
+    class HelloService {
+      constructor(private readonly traceService: TraceService) {}
+
+      @Span('hello')
+      async hi() {
+        return new Promise<number>((resolve) => {
+          this.traceService.addTags({ foo: 'bar', baz: 'qux' });
+          setTimeout(() => resolve(0), 100);
+        });
+      }
+    }
+
+    const module: TestingModule = await Test.createTestingModule({
+      imports: [SkyWalkingModule.forRoot()],
+      providers: [HelloService],
+    }).compile();
+
+    const helloService = module.get<HelloService>(HelloService);
+    await usingSpyMock(async (mockSpan) => {
+      // when
+      const result = await helloService.hi();
+
+      // then
+      expect(result).toBe(0);
+      expect(
+        Reflect.getMetadata(Constants.SPAN_METADATA, HelloService.prototype.hi),
+      ).toBe('hello');
+      expect(
+        Reflect.getMetadata(
+          Constants.SPAN_METADATA_ACTIVE,
+          HelloService.prototype.hi,
+        ),
+      ).toBe(1);
+      expect(ContextManager.current.newLocalSpan).toHaveBeenCalledWith('hello');
+      expect(mockSpan.start).toHaveBeenCalled();
+      expect(mockSpan.stop).toHaveBeenCalled();
+      expect(ContextManager.currentSpan.tag).toHaveBeenCalledWith({
+        key: 'foo',
+        val: 'bar',
+        overridable: false,
+      });
+      expect(ContextManager.currentSpan.tag).toHaveBeenCalledWith({
+        key: 'baz',
+        val: 'qux',
+        overridable: false,
+      });
+    });
+  });
+
+  it('should record error tags with TraceService', async () => {
+    // given
+    @Injectable()
+    class HelloService {
+      constructor(private readonly traceService: TraceService) {}
+
+      @Span('hello')
+      hi() {
+        try {
+          throw new Error('hello');
+        } catch (error) {
+          this.traceService.addError(error);
+        } finally {
+          return 0;
+        }
+      }
+    }
+
+    const module: TestingModule = await Test.createTestingModule({
+      imports: [SkyWalkingModule.forRoot()],
+      providers: [HelloService],
+    }).compile();
+
+    const helloService = module.get<HelloService>(HelloService);
+    await usingSpyMock(async (mockSpan) => {
+      // when
+      const result = await helloService.hi();
+
+      // then
+      expect(result).toBe(0);
+      expect(
+        Reflect.getMetadata(Constants.SPAN_METADATA, HelloService.prototype.hi),
+      ).toBe('hello');
+      expect(
+        Reflect.getMetadata(
+          Constants.SPAN_METADATA_ACTIVE,
+          HelloService.prototype.hi,
+        ),
+      ).toBe(1);
+      expect(ContextManager.current.newLocalSpan).toHaveBeenCalledWith('hello');
+      expect(mockSpan.start).toHaveBeenCalled();
+      expect(mockSpan.stop).toHaveBeenCalled();
+      expect(ContextManager.currentSpan.tag).toHaveBeenCalledWith({
+        key: 'error.name',
+        val: 'Error',
+        overridable: false,
+      });
+      expect(ContextManager.currentSpan.tag).toHaveBeenCalledWith({
+        key: 'error.message',
+        val: 'hello',
+        overridable: false,
+      });
+      expect(ContextManager.currentSpan.tag).toHaveBeenCalledWith({
+        key: 'error.stack',
+        val: expect.any(String),
+        overridable: false,
+      });
+    });
+  });
 });
 
 async function usingSpyMock(
@@ -1011,38 +1123,19 @@ async function usingSpyMock(
   const currentContextSpy = jest
     .spyOn(ContextManager, 'current', 'get')
     .mockReturnValue({
-      newLocalSpan: jest.fn().mockImplementation(() => {
-        return mockSpan;
-      }),
-      segment: {} as any,
-      nSpans: 0,
-      finished: false,
-      newEntrySpan: function (): SkyWalkingSpan {
-        throw new Error('Function not implemented.');
-      },
-      newExitSpan: function (): SkyWalkingSpan {
-        throw new Error('Function not implemented.');
-      },
-      start: function (): SkyWalkingContext {
-        throw new Error('Function not implemented.');
-      },
-      stop: function (): boolean {
-        throw new Error('Function not implemented.');
-      },
-      async: function (): void {
-        throw new Error('Function not implemented.');
-      },
-      resync: function (): void {
-        throw new Error('Function not implemented.');
-      },
-      traceId: function (): string {
-        throw new Error('Function not implemented.');
-      },
-    });
+      newLocalSpan: jest.fn().mockImplementation(() => mockSpan),
+    } as any);
+
+  const currentSpanSpy = jest
+    .spyOn(ContextManager, 'currentSpan', 'get')
+    .mockReturnValue({
+      tag: jest.fn().mockImplementation(() => {}),
+    } as any);
 
   try {
     await testFn(mockSpan);
   } finally {
     currentContextSpy.mockClear();
+    currentSpanSpy.mockClear();
   }
 }
