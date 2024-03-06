@@ -2,4 +2,5 @@
 
 src/
 *.ts
+!*.d.ts
 tests/
