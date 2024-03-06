@@ -1,10 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { ContextManager } from 'skywalking-backend-js';
+import { NoSpan } from './span.decorator';
 
 @Injectable()
-/**
- * Service for managing traces and spans.
- */
+@NoSpan()
 export class TraceService {
   /**
    * Gets the current span.
